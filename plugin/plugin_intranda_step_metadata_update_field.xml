@@ -1,0 +1,36 @@
+<config_plugin>
+    <!--
+        order of configuration is:
+          1.) project name and step name matches
+          2.) step name matches and project is *
+          3.) project name matches and step name is *
+          4.) project name and step name are *
+	-->
+    
+    <config>
+        <!-- which projects to use for (can be more then one, otherwise use *) -->
+        <project>*</project>
+        <step>*</step>
+        
+		<!-- define for which field the content shall be generated -->
+		<targetField>TitleDocMain</targetField>
+		<targetFieldPosition>child</targetFieldPosition>
+		
+		<!-- define if the content shall be overwritten if the field is not empty -->
+		<forceUpdate>true</forceUpdate>
+
+        <!-- define a list of content here to be used for the field as metadata value
+			variable: this content gets analyzed and replaced by the variable replacer 
+			static: a static string
+			random: a random number with a defined length 
+			uuid: a UUID with 36 characters
+			timestamp: a numeric timestamp -->
+		<content type="variable">{meta.CatalogIDDigital}</content>
+		<content type="static">_</content>
+		<content type="random">9</content>
+		<content type="uuid" />
+		<content type="timestamp" />
+		
+    </config>
+
+</config_plugin>

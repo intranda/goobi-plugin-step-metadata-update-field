@@ -1,5 +1,8 @@
 package de.intranda.goobi.plugins;
 
+import java.io.IOException;
+import java.util.ArrayList;
+
 /**
  * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
  *
@@ -20,9 +23,16 @@ package de.intranda.goobi.plugins;
  */
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang3.StringUtils;
+import org.goobi.beans.Process;
 import org.goobi.beans.Step;
+import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
@@ -30,24 +40,36 @@ import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
 import de.sub.goobi.config.ConfigPlugins;
+import de.sub.goobi.helper.Helper;
+import de.sub.goobi.helper.VariableReplacer;
+import de.sub.goobi.helper.exceptions.DAOException;
+import de.sub.goobi.helper.exceptions.SwapException;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import ugh.dl.Fileformat;
+import ugh.exceptions.PreferencesException;
+import ugh.exceptions.ReadException;
+import ugh.exceptions.WriteException;
 
 @PluginImplementation
 @Log4j2
 public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     
     @Getter
-    private String title = "intranda_step_metadata-update-field";
+    private String title = "intranda_step_metadata_update_field";
     @Getter
     private Step step;
-    @Getter
-    private String value;
-    @Getter 
-    private boolean allowTaskFinishButtons;
     private String returnPath;
 
+    private String targetField;
+    private String targetFieldPosition;
+    private boolean forceUpdate;
+    private List<ParameterItem> parameterList;
+    
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -55,8 +77,15 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                 
         // read parameters from correct block in configuration file
         SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig(title, step);
-        value = myconfig.getString("value", "default value"); 
-        allowTaskFinishButtons = myconfig.getBoolean("allowTaskFinishButtons", false);
+        forceUpdate = myconfig.getBoolean("forceUpdate", false);
+        targetField = myconfig.getString("targetField", null);
+        targetFieldPosition = myconfig.getString("targetFieldPosition", null);
+        parameterList = new ArrayList<>();
+        List<HierarchicalConfiguration> fields = myconfig.configurationsAt("content");
+        for (HierarchicalConfiguration hc : fields) {
+        	ParameterItem p = new ParameterItem(hc.getString(".", ""), hc.getString("@type", "static"));
+        	parameterList.add(p);
+        }
         log.info("Metadata-update-field step plugin initialized");
     }
 
@@ -104,12 +133,85 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     @Override
     public PluginReturnValue run() {
         boolean successfull = true;
-        // your logic goes here
+        
+        try {
+			Process process = step.getProzess();
+			Fileformat fileformat = process.readMetadataFile();
+		    VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
+	                process.getRegelsatz().getPreferences(), process, step);
+	
+	        // create metadata value
+	        StringBuilder sb = new StringBuilder();
+	        for (ParameterItem pi : parameterList) {
+	        	// replace variables
+	        	switch (pi.getType().toLowerCase()) {
+				
+	        	case "variable":
+	        		// variable from variable replacer
+	                pi.setValue(replacer.replace(pi.getValue()));
+					break;
+
+				case "random":
+					// random number with number of digits
+			        String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
+			        // shorten it, if it is too long
+			        int length = Integer.valueOf(pi.getValue());
+			        if (myId.length()> length) {
+			            myId = myId.substring(0,length);
+			        }
+			        // fill it with zeros if it is too short
+			        myId = StringUtils.leftPad(myId, length, "0");
+					pi.setValue(myId);
+					break;
+
+				case "timestamp":
+					// timestamp
+					long time = System.currentTimeMillis();
+	                pi.setValue(Long.toString(time));
+					break;
+					
+				case "uuid":
+					// uuid
+					UUID uuid = UUID.randomUUID();
+	                pi.setValue(uuid.toString());
+					break;
+
+				default:
+					break;
+				}
+	        	
+	        	// now add the (changed) value
+	            sb.append(pi.getValue());
+	        }
+	        
+	        
+	        String metadataValue = sb.toString().trim();
+	        
+	        
+	        
+		} catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException
+				| SwapException | DAOException e) {
+		    log.error("Error while renaming the process.");
+            Helper.setFehlerMeldung("Error while renaming the process.", e);
+            Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR,
+                    "Error while renaming the process. " + e.getMessage());
+            successfull = false;
+		}
+		
         
         log.info("Metadata-update-field step plugin executed");
         if (!successfull) {
             return PluginReturnValue.ERROR;
         }
         return PluginReturnValue.FINISH;
+    }
+    
+    @Data
+    @RequiredArgsConstructor
+    public class ParameterItem {
+        @NonNull
+        private String value;
+        @NonNull
+        private String type;
     }
 }

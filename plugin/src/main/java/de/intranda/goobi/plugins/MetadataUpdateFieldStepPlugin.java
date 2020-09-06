@@ -32,6 +32,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
+import org.goobi.production.enums.GoobiScriptResultType;
 import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
@@ -50,6 +51,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import ugh.dl.DigitalDocument;
+import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.exceptions.PreferencesException;
 import ugh.exceptions.ReadException;
@@ -185,8 +188,25 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 	        }
 	        
 	        
-	        String metadataValue = sb.toString().trim();
-	        
+//	        String metadataValue = sb.toString().trim();
+//	        DigitalDocument dd = fileformat.getDigitalDocument();
+//			DocStruct logicalTopstruct = dd.getLogicalDocStruct();
+//			
+//			// if child element shall be updated get this
+//            String position = parameters.get("position");
+//            if (position.equals("child")) {
+//                if (ds.getType().isAnchor()) {
+//                    ds = ds.getAllChildren().get(0);
+//                } else {
+//                    gsr.setResultMessage("Error while adding metadata to child, as topstruct is no anchor");
+//                    gsr.setResultType(GoobiScriptResultType.ERROR);
+//                    continue;
+//                }
+//            } else if (position.equals("work")) {
+//                if (ds.getType().isAnchor()) {
+//                    ds = ds.getAllChildren().get(0);
+//                }
+//            }
 	        
 	        
 		} catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException

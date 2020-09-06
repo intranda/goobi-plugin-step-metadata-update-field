@@ -53,7 +53,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
-import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
@@ -72,28 +71,16 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     @Getter
     private Step step;
     private String returnPath;
-
-    private String field;
-    private List<String> elements = new ArrayList<String>();    
-    private boolean forceUpdate;
-    private List<ParameterItem> parameterList;
+    private List<HierarchicalConfiguration> updates;
     
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
         this.step = step;
-                
-        // read parameters from correct block in configuration file
-        SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig(title, step);
-        forceUpdate = myconfig.getBoolean("forceUpdate", false);
-        field = myconfig.getString("field", null);
-        elements = Arrays.asList(myconfig.getStringArray("element"));
-        parameterList = new ArrayList<>();
-        List<HierarchicalConfiguration> fields = myconfig.configurationsAt("content");
-        for (HierarchicalConfiguration hc : fields) {
-        	ParameterItem p = new ParameterItem(hc.getString(".", ""), hc.getString("@type", "static"));
-        	parameterList.add(p);
-        }
+        
+        SubnodeConfiguration config = ConfigPlugins.getProjectAndStepConfig(title, step);
+        updates = config.configurationsAt("./update");
+        
         log.info("Metadata-update-field step plugin initialized");
     }
 
@@ -143,100 +130,115 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         boolean successfull = true;
         
         try {
-			Process process = step.getProzess();
-			Prefs prefs = process.getRegelsatz().getPreferences();
-			Fileformat fileformat = process.readMetadataFile();
-		    VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
-	                prefs, process, step);
-	
-	        // find the structure elements to be updated
-	        DigitalDocument dd = fileformat.getDigitalDocument();
-			DocStruct topstruct = dd.getLogicalDocStruct();
-			List<DocStruct> docstructList = new ArrayList<DocStruct>();
-			addAllMatchingDocstructs(docstructList, topstruct);
-			
-			// now run through all matching docstructs to update their values
-			UghHelper ughhelp = new UghHelper();
-			boolean updated = false;
-			for (DocStruct ds : docstructList) {
-		        
-			    // create metadata value
-	            StringBuilder sb = new StringBuilder();
-	            for (ParameterItem pi : parameterList) {
-	                // replace variables
-	                switch (pi.getType().toLowerCase()) {
-	                
-	                case "variable":
-                        // variable from variable replacer
-                        pi.setValueToUse(replacer.replace(pi.getValue()));
-                        break;
-                        
-	                case "metadata":
-	                    // metadata from the same docstruct element
-	                    MetadataType mdt = ughhelp.getMetadataType(prefs, pi.getValue());
-	                    Metadata md = ughhelp.getMetadata(ds, mdt);
-	                    pi.setValueToUse(md.getValue());
-	                    break;
-
-	                case "random":
-	                    // random number with number of digits
-	                    String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
-	                    // shorten it, if it is too long
-	                    int length = Integer.valueOf(pi.getValue());
-	                    if (myId.length()> length) {
-	                        myId = myId.substring(0,length);
-	                    }
-	                    // fill it with zeros if it is too short
-	                    myId = StringUtils.leftPad(myId, length, "0");
-	                    pi.setValueToUse(myId);
-	                    break;
-
-	                case "timestamp":
-	                    // timestamp
-	                    long time = System.currentTimeMillis();
-	                    pi.setValueToUse(Long.toString(time));
-	                    break;
-	                    
-	                case "uuid":
-	                    // uuid
-	                    UUID uuid = UUID.randomUUID();
-	                    pi.setValueToUse(uuid.toString());
-	                    break;
-
-	                default:
-	                    pi.setValueToUse(pi.getValue());
-	                    break;
-	                }
-	                
-	                // now add the (changed) value
-	                sb.append(pi.getValueToUse());
-	            }
-	            
-			    // run through all metadata fields to find the correct element
-			    if (forceUpdate) {
-			        // if the value is forced to be written
-	                ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
-	                updated = true;
-	            } else {
-	                // if the value is not force then only write it if no other metadata of that type exists
-	                MetadataType mdt = ughhelp.getMetadataType(prefs, field);
-	                Metadata md = ughhelp.getMetadata(ds, mdt);
-	                if (md==null || md.getValue() == null || md.getValue().isEmpty()) {
-	                    ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
-	                    updated = true;
-	                }
-	            }
+            UghHelper ughhelp = new UghHelper();
+            boolean updated = false;
+            Process process = step.getProzess();
+            Prefs prefs = process.getRegelsatz().getPreferences();
+            Fileformat fileformat = process.readMetadataFile();
+            VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
+                    prefs, process, step);
+            
+            for (HierarchicalConfiguration myconfig : updates) {
+                // read parameters from correct block in configuration file
+                boolean forceUpdate = myconfig.getBoolean("forceUpdate", false);
+                String field = myconfig.getString("field", null);
+                List<String> elements = Arrays.asList(myconfig.getStringArray("element"));
+                List<ParameterItem> parameterList = new ArrayList<>();
+                List<HierarchicalConfiguration> fields = myconfig.configurationsAt("content");
+                for (HierarchicalConfiguration hc : fields) {
+                    ParameterItem p = new ParameterItem(hc.getString(".", ""), hc.getString("@type", "static"));
+                    parameterList.add(p);
+                }
+                
+                // find the structure elements to be updated
+    			DocStruct topstruct = fileformat.getDigitalDocument().getLogicalDocStruct();
+    			List<DocStruct> docstructList = new ArrayList<DocStruct>();
+    			addAllMatchingDocstructs(docstructList, elements, topstruct);
+    			
+    			// now run through all matching docstructs to update their values
+    			for (DocStruct ds : docstructList) {
+    		        
+    			    // create metadata value
+    	            StringBuilder sb = new StringBuilder();
+    	            for (ParameterItem pi : parameterList) {
+    	                // replace variables
+    	                switch (pi.getType().toLowerCase()) {
+    	                
+    	                case "variable":
+                            // variable from variable replacer
+                            pi.setValueToUse(replacer.replace(pi.getValue()));
+                            break;
+                            
+    	                case "metadata":
+    	                    // metadata from the same docstruct element
+    	                    MetadataType mdt = ughhelp.getMetadataType(prefs, pi.getValue());
+    	                    Metadata md = ughhelp.getMetadata(ds, mdt);
+    	                    pi.setValueToUse(md.getValue());
+    	                    break;
+    
+    	                case "random":
+    	                    // random number with number of digits
+    	                    String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
+    	                    // shorten it, if it is too long
+    	                    int length = Integer.valueOf(pi.getValue());
+    	                    if (myId.length()> length) {
+    	                        myId = myId.substring(0,length);
+    	                    }
+    	                    // fill it with zeros if it is too short
+    	                    myId = StringUtils.leftPad(myId, length, "0");
+    	                    pi.setValueToUse(myId);
+    	                    break;
+    
+    	                case "timestamp":
+    	                    // timestamp
+    	                    long time = System.currentTimeMillis();
+    	                    pi.setValueToUse(Long.toString(time));
+    	                    break;
+    	                    
+    	                case "uuid":
+    	                    // uuid
+    	                    UUID uuid = UUID.randomUUID();
+    	                    pi.setValueToUse(uuid.toString());
+    	                    break;
+    
+    	                default:
+    	                    pi.setValueToUse(pi.getValue());
+    	                    break;
+    	                }
+    	                
+    	                // now add the (changed) value
+    	                sb.append(pi.getValueToUse());
+    	            }
+    	            
+    			    // run through all metadata fields to find the correct element
+    			    if (forceUpdate) {
+    			        // if the value is forced to be written
+    	                ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+    	                updated = true;
+    	            } else {
+    	                // if the value is not force then only write it if no other metadata of that type exists
+    	                MetadataType mdt = ughhelp.getMetadataType(prefs, field);
+    	                Metadata md = ughhelp.getMetadata(ds, mdt);
+    	                if (md==null || md.getValue() == null || md.getValue().isEmpty()) {
+    	                    ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+    	                    updated = true;
+    	                }
+    	            }
+                }
             }
+			
+			
+			
 			if (updated) {
 			    process.writeMetadataFile(fileformat);
 			}
 	        
 		} catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException
 				| SwapException | DAOException | UghHelperException e) {
-		    log.error("Error while updating the metadata " + field);
-            Helper.setFehlerMeldung("Error while updating the metadata " + field, e);
+		    log.error("Error while automatically updating the metadata", e);
+            Helper.setFehlerMeldung("Error while automatically updating metadata.", e);
             Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR,
-                    "Error while updating the metadata " + field + ": " + e.getMessage());
+                    "Error while automatically updating metadata: " + e.getMessage());
             successfull = false;
 		}
         
@@ -254,7 +256,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
      * @param docstructList List for the docstructs to be added to
      * @param ds current element to check
      */
-    private void addAllMatchingDocstructs(List<DocStruct> docstructList, DocStruct ds) {
+    private void addAllMatchingDocstructs(List<DocStruct> docstructList, List<String> elements, DocStruct ds) {
         String type = ds.getType().getName();
         if (elements.contains("*") || elements.contains(type)){
             docstructList.add(ds);
@@ -262,7 +264,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         List<DocStruct> children = ds.getAllChildren();
         if (children!=null) {
             for (DocStruct d : children) {
-                addAllMatchingDocstructs(docstructList, d);
+                addAllMatchingDocstructs(docstructList, elements, d);
             }
         }
     }

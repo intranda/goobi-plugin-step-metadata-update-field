@@ -12,31 +12,42 @@
         <project>*</project>
         <step>*</step>
         
-		<!-- define for which field inside of the METS file the content shall be generated -->
-		<field>TitleDocMain</field>
+        <!-- multiple updates can happen within one call. 
+        	Repeat the update blocks for each additional change -->
+        <update>
+			<!-- define for which field inside of the METS file the content shall be generated -->
+			<field>TitleDocMain</field>
+			
+			<!-- for which structure elements shall the content be updated? 
+				Multiple 'element' can be listed here. 
+				Use '*' to match all structure element types. -->
+			<element>Monograph</element>
+			
+			<!-- define if the content shall be overwritten if the field is not empty -->
+			<forceUpdate>true</forceUpdate>
+	
+	        <!-- define a list of content here to be used for the field as metadata value
+				variable: this content gets analyzed and replaced by the variable replacer 
+				metadata: value of the metadata field with the given name inside of the same docstruct element
+				static: a static string
+				random: a random number with a defined length 
+				uuid: a UUID with 36 characters
+				timestamp: a numeric timestamp -->
+			<content type="variable">{meta.CatalogIDDigital}</content>
+			<content type="metadata">DocLanguage</content>
+			<content type="static">_</content>
+			<content type="random">9</content>
+			<content type="uuid" />
+			<content type="timestamp" />
+		</update>
 		
-		<!-- for which structure elements shall the content be updated? 
-			Multiple 'element' can be listed here. 
-			Use '*' to match all structure element types. -->
-		<element>Monograph</element>
-		
-		<!-- define if the content shall be overwritten if the field is not empty -->
-		<forceUpdate>true</forceUpdate>
-
-        <!-- define a list of content here to be used for the field as metadata value
-			variable: this content gets analyzed and replaced by the variable replacer 
-			metadata: value of the metadata field with the given name inside of the same docstruct element
-			static: a static string
-			random: a random number with a defined length 
-			uuid: a UUID with 36 characters
-			timestamp: a numeric timestamp -->
-		<content type="variable">{meta.CatalogIDDigital}</content>
-		<content type="metadata">DocLanguage</content>
-		<content type="static">_</content>
-		<content type="random">9</content>
-		<content type="uuid" />
-		<content type="timestamp" />
-		
+		<update>
+			<field>DocLanguage</field>
+			<element>Chapter</element>
+			<forceUpdate>false</forceUpdate>
+			<content type="variable">{meta.DocLanguage}</content>
+		</update>
+				
     </config>
 
 </config_plugin>

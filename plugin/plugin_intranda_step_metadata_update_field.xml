@@ -13,20 +13,25 @@
         <step>*</step>
         
 		<!-- define for which field inside of the METS file the content shall be generated -->
-		<targetField>TitleDocMain</targetField>
-		<!-- at which position is this field to be updated? Allowed values are 'top' and 'child' -->
-		<targetFieldPosition>child</targetFieldPosition>
+		<field>TitleDocMain</field>
+		
+		<!-- for which structure elements shall the content be updated? 
+			Multiple 'element' can be listed here. 
+			Use '*' to match all structure element types. -->
+		<element>Monograph</element>
 		
 		<!-- define if the content shall be overwritten if the field is not empty -->
 		<forceUpdate>true</forceUpdate>
 
         <!-- define a list of content here to be used for the field as metadata value
 			variable: this content gets analyzed and replaced by the variable replacer 
+			metadata: value of the metadata field with the given name inside of the same docstruct element
 			static: a static string
 			random: a random number with a defined length 
 			uuid: a UUID with 36 characters
 			timestamp: a numeric timestamp -->
 		<content type="variable">{meta.CatalogIDDigital}</content>
+		<content type="metadata">DocLanguage</content>
 		<content type="static">_</content>
 		<content type="random">9</content>
 		<content type="uuid" />

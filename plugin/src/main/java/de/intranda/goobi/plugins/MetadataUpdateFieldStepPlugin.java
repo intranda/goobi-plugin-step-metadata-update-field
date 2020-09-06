@@ -2,6 +2,7 @@ package de.intranda.goobi.plugins;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
@@ -72,8 +73,8 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     private Step step;
     private String returnPath;
 
-    private String targetField;
-    private String targetFieldPosition;
+    private String field;
+    private List<String> elements = new ArrayList<String>();    
     private boolean forceUpdate;
     private List<ParameterItem> parameterList;
     
@@ -85,8 +86,8 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         // read parameters from correct block in configuration file
         SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig(title, step);
         forceUpdate = myconfig.getBoolean("forceUpdate", false);
-        targetField = myconfig.getString("targetField", null);
-        targetFieldPosition = myconfig.getString("targetFieldPosition", null);
+        field = myconfig.getString("field", null);
+        elements = Arrays.asList(myconfig.getStringArray("element"));
         parameterList = new ArrayList<>();
         List<HierarchicalConfiguration> fields = myconfig.configurationsAt("content");
         for (HierarchicalConfiguration hc : fields) {
@@ -148,88 +149,94 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 		    VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
 	                prefs, process, step);
 	
-	        // create metadata value
-	        StringBuilder sb = new StringBuilder();
-	        for (ParameterItem pi : parameterList) {
-	        	// replace variables
-	        	switch (pi.getType().toLowerCase()) {
-				
-	        	case "variable":
-	        		// variable from variable replacer
-	                pi.setValue(replacer.replace(pi.getValue()));
-					break;
-
-				case "random":
-					// random number with number of digits
-			        String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
-			        // shorten it, if it is too long
-			        int length = Integer.valueOf(pi.getValue());
-			        if (myId.length()> length) {
-			            myId = myId.substring(0,length);
-			        }
-			        // fill it with zeros if it is too short
-			        myId = StringUtils.leftPad(myId, length, "0");
-					pi.setValue(myId);
-					break;
-
-				case "timestamp":
-					// timestamp
-					long time = System.currentTimeMillis();
-	                pi.setValue(Long.toString(time));
-					break;
-					
-				case "uuid":
-					// uuid
-					UUID uuid = UUID.randomUUID();
-	                pi.setValue(uuid.toString());
-					break;
-
-				default:
-					break;
-				}
-	        	
-	        	// now add the (changed) value
-	            sb.append(pi.getValue());
-	        }
-	        
 	        // find the structure elements to be updated
 	        DigitalDocument dd = fileformat.getDigitalDocument();
-			DocStruct ds = dd.getLogicalDocStruct();
+			DocStruct topstruct = dd.getLogicalDocStruct();
+			List<DocStruct> docstructList = new ArrayList<DocStruct>();
+			addAllMatchingDocstructs(docstructList, topstruct);
 			
-			// if child element shall be updated get this
-			if (targetFieldPosition.equals("top")) {
-			  // do nothing, just use the top element as it is  
-			} else if (targetFieldPosition.equals("child") && ds.getType().isAnchor()) {
-                // if the child is wanted and the top element is an anchor 
-			    // element take the first child now
-			    ds = ds.getAllChildren().get(0);
-            } else {
-                // if another element was defined then try to run through all elements within the whole tree
-                // this is still not implemented
-            }
-	        
-			// run through all metadata fields to find the correct element
-			String metadataValue = sb.toString().trim();
+			// now run through all matching docstructs to update their values
 			UghHelper ughhelp = new UghHelper();
-			if (forceUpdate) {
-			    // if the value is forced to be written
-			    ughhelp.replaceMetadatum(ds, prefs, targetField, metadataValue);
-                process.writeMetadataFile(fileformat);
-			} else {
-			    // if the value is not force then only write it if no other metadata of that type exists
-			    MetadataType mdt = ughhelp.getMetadataType(prefs, targetField);
-			    Metadata md = ughhelp.getMetadata(ds, mdt);
-			    if (md==null || md.getValue() == null || md.getValue().isEmpty()) {
-			        ughhelp.replaceMetadatum(ds, prefs, targetField, metadataValue);
-			        process.writeMetadataFile(fileformat);
-			    }
+			boolean updated = false;
+			for (DocStruct ds : docstructList) {
+		        
+			    // create metadata value
+	            StringBuilder sb = new StringBuilder();
+	            for (ParameterItem pi : parameterList) {
+	                // replace variables
+	                switch (pi.getType().toLowerCase()) {
+	                
+	                case "variable":
+                        // variable from variable replacer
+                        pi.setValueToUse(replacer.replace(pi.getValue()));
+                        break;
+                        
+	                case "metadata":
+	                    // metadata from the same docstruct element
+	                    MetadataType mdt = ughhelp.getMetadataType(prefs, pi.getValue());
+	                    Metadata md = ughhelp.getMetadata(ds, mdt);
+	                    pi.setValueToUse(md.getValue());
+	                    break;
+
+	                case "random":
+	                    // random number with number of digits
+	                    String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
+	                    // shorten it, if it is too long
+	                    int length = Integer.valueOf(pi.getValue());
+	                    if (myId.length()> length) {
+	                        myId = myId.substring(0,length);
+	                    }
+	                    // fill it with zeros if it is too short
+	                    myId = StringUtils.leftPad(myId, length, "0");
+	                    pi.setValueToUse(myId);
+	                    break;
+
+	                case "timestamp":
+	                    // timestamp
+	                    long time = System.currentTimeMillis();
+	                    pi.setValueToUse(Long.toString(time));
+	                    break;
+	                    
+	                case "uuid":
+	                    // uuid
+	                    UUID uuid = UUID.randomUUID();
+	                    pi.setValueToUse(uuid.toString());
+	                    break;
+
+	                default:
+	                    pi.setValueToUse(pi.getValue());
+	                    break;
+	                }
+	                
+	                // now add the (changed) value
+	                sb.append(pi.getValueToUse());
+	            }
+	            
+			    // run through all metadata fields to find the correct element
+			    if (forceUpdate) {
+			        // if the value is forced to be written
+	                ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+	                updated = true;
+	            } else {
+	                // if the value is not force then only write it if no other metadata of that type exists
+	                MetadataType mdt = ughhelp.getMetadataType(prefs, field);
+	                Metadata md = ughhelp.getMetadata(ds, mdt);
+	                if (md==null || md.getValue() == null || md.getValue().isEmpty()) {
+	                    ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+	                    updated = true;
+	                }
+	            }
+            }
+			if (updated) {
+			    process.writeMetadataFile(fileformat);
 			}
+	        
 		} catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException
 				| SwapException | DAOException | UghHelperException e) {
-		    log.error("Error while updating the metadata " + targetField);
-            Helper.setFehlerMeldung("Error while updating the metadata " + targetField, e);
+		    log.error("Error while updating the metadata " + field);
+            Helper.setFehlerMeldung("Error while updating the metadata " + field, e);
             Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR,
-                    "Error while updating the metadata " + targetField + ": " + e.getMessage());
+                    "Error while updating the metadata " + field + ": " + e.getMessage());
             successfull = false;
 		}
         
@@ -240,6 +247,26 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         return PluginReturnValue.FINISH;
     }
     
+    
+    /**
+     * Run through list of all sub docstructs to put them into a list
+     * 
+     * @param docstructList List for the docstructs to be added to
+     * @param ds current element to check
+     */
+    private void addAllMatchingDocstructs(List<DocStruct> docstructList, DocStruct ds) {
+        String type = ds.getType().getName();
+        if (elements.contains("*") || elements.contains(type)){
+            docstructList.add(ds);
+        }
+        List<DocStruct> children = ds.getAllChildren();
+        if (children!=null) {
+            for (DocStruct d : children) {
+                addAllMatchingDocstructs(docstructList, d);
+            }
+        }
+    }
+
     @Data
     @RequiredArgsConstructor
     public class ParameterItem {
@@ -247,5 +274,6 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         private String value;
         @NonNull
         private String type;
+        private String valueToUse;
     }
 }

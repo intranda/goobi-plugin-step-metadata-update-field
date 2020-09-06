@@ -12,8 +12,9 @@
         <project>*</project>
         <step>*</step>
         
-		<!-- define for which field the content shall be generated -->
+		<!-- define for which field inside of the METS file the content shall be generated -->
 		<targetField>TitleDocMain</targetField>
+		<!-- at which position is this field to be updated? Allowed values are 'top' and 'child' -->
 		<targetFieldPosition>child</targetFieldPosition>
 		
 		<!-- define if the content shall be overwritten if the field is not empty -->

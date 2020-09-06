@@ -32,7 +32,6 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
-import org.goobi.production.enums.GoobiScriptResultType;
 import org.goobi.production.enums.LogType;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
@@ -42,9 +41,11 @@ import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.Helper;
+import de.sub.goobi.helper.UghHelper;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
+import de.sub.goobi.helper.exceptions.UghHelperException;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
@@ -54,6 +55,9 @@ import net.xeoh.plugins.base.annotations.PluginImplementation;
 import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
+import ugh.dl.Metadata;
+import ugh.dl.MetadataType;
+import ugh.dl.Prefs;
 import ugh.exceptions.PreferencesException;
 import ugh.exceptions.ReadException;
 import ugh.exceptions.WriteException;
@@ -139,9 +143,10 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         
         try {
 			Process process = step.getProzess();
+			Prefs prefs = process.getRegelsatz().getPreferences();
 			Fileformat fileformat = process.readMetadataFile();
 		    VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
-	                process.getRegelsatz().getPreferences(), process, step);
+	                prefs, process, step);
 	
 	        // create metadata value
 	        StringBuilder sb = new StringBuilder();
@@ -187,37 +192,46 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 	            sb.append(pi.getValue());
 	        }
 	        
+	        // find the structure elements to be updated
+	        DigitalDocument dd = fileformat.getDigitalDocument();
+			DocStruct ds = dd.getLogicalDocStruct();
+			
+			// if child element shall be updated get this
+			if (targetFieldPosition.equals("top")) {
+			  // do nothing, just use the top element as it is  
+			} else if (targetFieldPosition.equals("child") && ds.getType().isAnchor()) {
+                // if the child is wanted and the top element is an anchor 
+			    // element take the first child now
+			    ds = ds.getAllChildren().get(0);
+            } else {
+                // if another element was defined then try to run through all elements within the whole tree
+                // this is still not implemented
+            }
 	        
-//	        String metadataValue = sb.toString().trim();
-//	        DigitalDocument dd = fileformat.getDigitalDocument();
-//			DocStruct logicalTopstruct = dd.getLogicalDocStruct();
-//			
-//			// if child element shall be updated get this
-//            String position = parameters.get("position");
-//            if (position.equals("child")) {
-//                if (ds.getType().isAnchor()) {
-//                    ds = ds.getAllChildren().get(0);
-//                } else {
-//                    gsr.setResultMessage("Error while adding metadata to child, as topstruct is no anchor");
-//                    gsr.setResultType(GoobiScriptResultType.ERROR);
-//                    continue;
-//                }
-//            } else if (position.equals("work")) {
-//                if (ds.getType().isAnchor()) {
-//                    ds = ds.getAllChildren().get(0);
-//                }
-//            }
-	        
-	        
+			// run through all metadata fields to find the correct element
+			String metadataValue = sb.toString().trim();
+			UghHelper ughhelp = new UghHelper();
+			if (forceUpdate) {
+			    // if the value is forced to be written
+			    ughhelp.replaceMetadatum(ds, prefs, targetField, metadataValue);
+                process.writeMetadataFile(fileformat);
+			} else {
+			    // if the value is not force then only write it if no other metadata of that type exists
+			    MetadataType mdt = ughhelp.getMetadataType(prefs, targetField);
+			    Metadata md = ughhelp.getMetadata(ds, mdt);
+			    if (md==null || md.getValue() == null || md.getValue().isEmpty()) {
+			        ughhelp.replaceMetadatum(ds, prefs, targetField, metadataValue);
+			        process.writeMetadataFile(fileformat);
+			    }
+			}
 		} catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException
-				| SwapException | DAOException e) {
-		    log.error("Error while renaming the process.");
-            Helper.setFehlerMeldung("Error while renaming the process.", e);
+				| SwapException | DAOException | UghHelperException e) {
+		    log.error("Error while updating the metadata " + targetField);
+            Helper.setFehlerMeldung("Error while updating the metadata " + targetField, e);
             Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR,
-                    "Error while renaming the process. " + e.getMessage());
+                    "Error while updating the metadata " + targetField + ": " + e.getMessage());
             successfull = false;
 		}
-		
         
         log.info("Metadata-update-field step plugin executed");
         if (!successfull) {

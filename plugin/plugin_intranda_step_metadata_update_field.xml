@@ -6,15 +6,15 @@
           3.) project name matches and step name is *
           4.) project name and step name are *
 	-->
-    
-    <config>
+
+	<config>
         <!-- which projects to use for (can be more then one, otherwise use *) -->
-        <project>*</project>
-        <step>*</step>
+		<project>*</project>
+		<step>*</step>
         
         <!-- multiple updates can happen within one call. 
         	Repeat the update blocks for each additional change -->
-        <update>
+		<update>
 			<!-- define for which field inside of the METS file the content shall be generated -->
 			<field>TitleDocMain</field>
 			
@@ -39,15 +39,16 @@
 			<content type="random">9</content>
 			<content type="uuid" />
 			<content type="timestamp" />
+			<content type="counter">%03d</content>
 		</update>
-		
+
 		<update>
 			<field>DocLanguage</field>
 			<element>Chapter</element>
 			<forceUpdate>false</forceUpdate>
 			<content type="variable">{meta.DocLanguage}</content>
 		</update>
-				
-    </config>
+
+	</config>
 
 </config_plugin>

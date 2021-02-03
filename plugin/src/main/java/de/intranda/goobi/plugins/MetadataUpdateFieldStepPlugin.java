@@ -137,6 +137,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
             Fileformat fileformat = process.readMetadataFile();
             VariableReplacer replacer = new VariableReplacer(fileformat != null ? fileformat.getDigitalDocument() : null,
                     prefs, process, step);
+            int counter = 1;
             
             for (HierarchicalConfiguration myconfig : updates) {
                 // read parameters from correct block in configuration file
@@ -176,6 +177,13 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     	                    pi.setValueToUse(md.getValue());
     	                    break;
     
+                        case "counter":
+                            // increment a counter
+                            String mycounter = String.format(pi.getValue(), counter);
+                            pi.setValueToUse(mycounter);
+                            counter++;
+                            break;
+    	                    
     	                case "random":
     	                    // random number with number of digits
     	                    String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));

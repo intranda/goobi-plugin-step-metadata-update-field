@@ -8,11 +8,11 @@
 	-->
 
 	<config>
-        <!-- which projects to use for (can be more then one, otherwise use *) -->
+		<!-- which projects to use for (can be more then one, otherwise use *) -->
 		<project>*</project>
 		<step>*</step>
         
-        <!-- multiple updates can happen within one call. 
+		<!-- multiple updates can happen within one call. 
         	Repeat the update blocks for each additional change -->
 		<update>
 			<!-- define for which field inside of the METS file the content shall be generated -->

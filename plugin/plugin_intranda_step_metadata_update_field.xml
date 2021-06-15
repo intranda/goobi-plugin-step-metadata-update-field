@@ -32,7 +32,8 @@
 				static: a static string
 				random: a random number with a defined length 
 				uuid: a UUID with 36 characters
-				timestamp: a numeric timestamp -->
+				timestamp: a numeric timestamp 
+                groupcounter: a separate counter for each value of 'groupField' -->
 			<content type="variable">{meta.CatalogIDDigital}</content>
 			<content type="metadata">DocLanguage</content>
 			<content type="static">_</content>
@@ -40,6 +41,7 @@
 			<content type="uuid" />
 			<content type="timestamp" />
 			<content type="counter">%03d</content>
+            <content groupField="{meta.PublicationYear}" type="groupcounter">%03d</content>
 		</update>
 
 		<update>
@@ -47,6 +49,7 @@
 			<element>Chapter</element>
 			<forceUpdate>false</forceUpdate>
 			<content type="variable">{meta.DocLanguage}</content>
+            
 		</update>
 
 	</config>

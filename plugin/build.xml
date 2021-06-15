@@ -1,7 +1,7 @@
 <project default="devbuild">
 
 	<!-- Simply set the name of the plugin here, e.g. "fileUpload") instead of "sample" -->
-	<property name="name" value="metadata-update-field" />
+	<property name="name" value="metadata_update_field" />
 
 	<!-- Use this task to let ant copy the compiled jar files to the target folders for development  -->
 	<target name="devbuild">
@@ -9,7 +9,6 @@
 			<arg value="package"/>
 		</exec>
 		<copy file="module-main/target/plugin_intranda_step_${name}.jar" todir="/opt/digiverso/goobi/plugins/step/" overwrite="true"/>
-		<copy file="module-gui/target/plugin_intranda_step_${name}-GUI.jar" todir="/opt/digiverso/goobi/plugins/GUI/" overwrite="true"/>
 	</target>
 
 </project>

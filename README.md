@@ -12,7 +12,7 @@ More information about the functionality of this plugin and the complete documen
 
 Detail | Description
 --- | ---
-**Plugin identifier**       | intranda_step_metadata-update-field
+**Plugin identifier**       | intranda_step_metadata_update_field
 **Plugin type**             | Step plugin
 **Licence**                 | GPL 2.0 or newer    
 **Documentation (German)**  | - no documentation available -

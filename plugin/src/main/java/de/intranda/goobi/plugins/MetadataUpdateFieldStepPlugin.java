@@ -157,6 +157,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     parameterList.add(p);
                 }
 
+
                 // find the structure elements to be updated
                 DocStruct topstruct = fileformat.getDigitalDocument().getLogicalDocStruct();
                 List<DocStruct> docstructList = new ArrayList<>();
@@ -231,17 +232,27 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                         sb.append(pi.getValueToUse());
                     }
 
+                    List<HierarchicalConfiguration> replacements = myconfig.configurationsAt("replace");
+                    String value = sb.toString().trim();
+                    for (HierarchicalConfiguration hc : replacements) {
+                        String searchvalue = hc.getString("@value").replace("\\u0020", " ");
+                        String replacement = hc.getString("@replacement").replace("\\u0020", " ");;
+                        //                        log.info("replace '" + searchvalue + "' with '" + replacement + "'");
+                        value = value.replace(searchvalue, replacement);
+                    }
+
+
                     // run through all metadata fields to find the correct element
                     if (forceUpdate) {
                         // if the value is forced to be written
-                        ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+                        ughhelp.replaceMetadatum(ds, prefs, field, value);
                         updated = true;
                     } else {
                         // if the value is not force then only write it if no other metadata of that type exists
                         MetadataType mdt = ughhelp.getMetadataType(prefs, field);
                         Metadata md = ughhelp.getMetadata(ds, mdt);
                         if (md == null || md.getValue() == null || md.getValue().isEmpty()) {
-                            ughhelp.replaceMetadatum(ds, prefs, field, sb.toString().trim());
+                            ughhelp.replaceMetadatum(ds, prefs, field, value);
                             updated = true;
                         }
                     }

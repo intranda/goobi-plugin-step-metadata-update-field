@@ -42,6 +42,10 @@
 			<content type="timestamp" />
 			<content type="counter">%03d</content>
             <content groupField="{meta.PublicationYear}" type="groupcounter">%03d</content>
+            
+            <!-- replace some texts with other texts. For leading, trailing or single whitespaces, use '\u0020' -->
+            <!-- field is repeatable to allow multiple changes. The individual replacements are processed from top to bottom -->
+           <replace value="/" replacement="-" />
 		</update>
 
 		<update>

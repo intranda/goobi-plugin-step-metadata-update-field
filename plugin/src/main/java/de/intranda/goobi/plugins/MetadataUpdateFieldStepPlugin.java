@@ -311,7 +311,11 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
     private Integer getNextIdentifier(String fieldName) {
         // create table if missing
         if (!DatabaseVersion.checkIfTableExists("plugin_metadata_update_field")) {
-            DatabaseVersion.runSql(getTableDefinition());
+            try {
+                DatabaseVersion.runSql(getTableDefinition());
+            } catch (SQLException e) {
+                log.error(e);
+            }
         }
         String query = "select currentCounter from plugin_metadata_update_field where fieldName = ?";
         Connection connection = null;

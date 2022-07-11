@@ -157,7 +157,6 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     parameterList.add(p);
                 }
 
-
                 // find the structure elements to be updated
                 DocStruct topstruct = fileformat.getDigitalDocument().getLogicalDocStruct();
                 List<DocStruct> docstructList = new ArrayList<>();
@@ -202,7 +201,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                                 // random number with number of digits
                                 String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
                                 // shorten it, if it is too long
-                                int length = Integer.valueOf(pi.getValue());
+                                int length = Integer.parseInt(pi.getValue());
                                 if (myId.length() > length) {
                                     myId = myId.substring(0, length);
                                 }
@@ -236,11 +235,10 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     String value = sb.toString().trim();
                     for (HierarchicalConfiguration hc : replacements) {
                         String searchvalue = hc.getString("@value").replace("\\u0020", " ");
-                        String replacement = hc.getString("@replacement").replace("\\u0020", " ");;
-                        //                        log.info("replace '" + searchvalue + "' with '" + replacement + "'");
+                        String replacement = hc.getString("@replacement").replace("\\u0020", " ");
+                        ;
                         value = value.replace(searchvalue, replacement);
                     }
-
 
                     // run through all metadata fields to find the correct element
                     if (forceUpdate) {
@@ -322,30 +320,33 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         try {
             connection = MySQLHelper.getInstance().getConnection();
 
-            PreparedStatement statement = connection.prepareStatement(query);
-            statement.setString(1, fieldName);
-            ResultSet rs = statement.executeQuery();
-            int currentCounter = 0;
-            if (rs.next()) {
-                currentCounter = rs.getInt("currentCounter");
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, fieldName);
+                ResultSet rs = statement.executeQuery();
+                int currentCounter = 0;
+                if (rs.next()) {
+                    currentCounter = rs.getInt("currentCounter");
+                }
+                int nextCounter = currentCounter == 0 ? 1 : currentCounter + 1;
+                if (currentCounter == 0) {
+                    // insert into
+                    String insert = "insert into plugin_metadata_update_field (fieldName, currentCounter) values (?,?);";
+                    try (PreparedStatement statement2 = connection.prepareStatement(insert)) {
+                        statement2.setString(1, fieldName);
+                        statement2.setInt(2, nextCounter);
+                        statement2.execute();
+                    }
+                } else {
+                    // update
+                    String update = "update plugin_metadata_update_field set currentCounter = ? where fieldName = ?;";
+                    try (PreparedStatement statement2 = connection.prepareStatement(update)) {
+                        statement2.setInt(1, nextCounter);
+                        statement2.setString(2, fieldName);
+                        statement2.execute();
+                    }
+                }
+                return nextCounter;
             }
-            int nextCounter = currentCounter == 0 ? 1 : currentCounter + 1;
-            if (currentCounter == 0) {
-                // insert into
-                String insert = "insert into plugin_metadata_update_field (fieldName, currentCounter) values (?,?);";
-                PreparedStatement statement2 = connection.prepareStatement(insert);
-                statement2.setString(1, fieldName);
-                statement2.setInt(2, nextCounter);
-                statement2.execute();
-            } else {
-                // update
-                String update = "update plugin_metadata_update_field set currentCounter = ? where fieldName = ?;";
-                PreparedStatement statement2 = connection.prepareStatement(update);
-                statement2.setInt(1, nextCounter);
-                statement2.setString(2, fieldName);
-                statement2.execute();
-            }
-            return nextCounter;
         } catch (SQLException e) {
             log.error(e);
         } finally {

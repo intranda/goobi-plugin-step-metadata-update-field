@@ -1,6 +1,7 @@
 package de.intranda.goobi.plugins;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,7 +31,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -199,7 +199,8 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 
                             case "random":
                                 // random number with number of digits
-                                String myId = String.valueOf(ThreadLocalRandom.current().nextInt(1, 999999999 + 1));
+                                SecureRandom random = new SecureRandom();
+                                String myId = String.valueOf(random.nextInt(999999999));
                                 // shorten it, if it is too long
                                 int length = Integer.parseInt(pi.getValue());
                                 if (myId.length() > length) {
@@ -236,7 +237,6 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     for (HierarchicalConfiguration hc : replacements) {
                         String searchvalue = hc.getString("@value").replace("\\u0020", " ");
                         String replacement = hc.getString("@replacement").replace("\\u0020", " ");
-                        ;
                         value = value.replace(searchvalue, replacement);
                     }
 
@@ -354,6 +354,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                 try {
                     MySQLHelper.closeConnection(connection);
                 } catch (SQLException e) {
+                    log.error(e);
                 }
             }
         }

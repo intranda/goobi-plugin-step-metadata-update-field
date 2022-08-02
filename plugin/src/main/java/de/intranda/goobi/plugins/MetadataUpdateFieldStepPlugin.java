@@ -48,7 +48,6 @@ import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.Helper;
 import de.sub.goobi.helper.UghHelper;
 import de.sub.goobi.helper.VariableReplacer;
-import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.exceptions.UghHelperException;
 import de.sub.goobi.persistence.managers.DatabaseVersion;
@@ -261,8 +260,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                 process.writeMetadataFile(fileformat);
             }
 
-        } catch (ReadException | PreferencesException | WriteException | IOException | InterruptedException | SwapException | DAOException
-                | UghHelperException e) {
+        } catch (ReadException | PreferencesException | WriteException | IOException | SwapException | UghHelperException e) {
             log.error("Error while automatically updating the metadata", e);
             Helper.setFehlerMeldung("Error while automatically updating metadata.", e);
             Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR, "Error while automatically updating metadata: " + e.getMessage());

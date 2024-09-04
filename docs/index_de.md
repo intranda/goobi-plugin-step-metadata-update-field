@@ -1,5 +1,5 @@
 ---
-title: Metadaten aktualisieren
+title: Metadatenfelder aktualisieren
 identifier: intranda_step_metadata_update_field
 description: Step Plugin für das automatische Aktualisieren von Werten innerhalb von METS-Dateien
 published: true

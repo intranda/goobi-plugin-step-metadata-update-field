@@ -1,7 +1,7 @@
 ---
-title: Update Metadata 
+title: Update Metadata Fields
 identifier: intranda_step_metadata_update_field
-description: Step Plugin for automatically updating values in Mets Files published
+description: Step Plugin for automatically updating values in METS files
 published: true
 ---
 
@@ -28,7 +28,7 @@ First, the values that the plugin is supposed to update must be defined in the c
 
 
 ## Configuration
-The plugin is configured in the file `plugin_intranda_step_ZZZ.xml` as shown here:
+The plugin is configured in the file `plugin_intranda_step_metadata_update_field.xml` as shown here:
 
 {{CONFIG_CONTENT}}
 

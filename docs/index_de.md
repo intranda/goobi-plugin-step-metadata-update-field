@@ -1,12 +1,12 @@
 ---
 title: Metadaten aktualisieren
 identifier: intranda_step_metadata_update_field
-description: Step Plugin für das automatische Aktualisieren von Werte n Mets-Dateien
+description: Step Plugin für das automatische Aktualisieren von Werten innerhalb von METS-Dateien
 published: true
 ---
 
 ## Einführung
-Dieses Plugin für den Goobi workflow ermöglicht es, spezifische Metadatenfelder innerhalb von METS-Dateien automatisch zu erstellen oder zu aktualisieren. Dazu kann es den Variable Replacer oder benachbarte Metadatenfelder verwenden, um Metadaten in logische Elemente auf allen hierarchischen Ebenen zu schreiben.
+Dieses Plugin für den Goobi workflow ermöglicht es, spezifische Metadatenfelder innerhalb von METS-Dateien automatisch zu erstellen oder zu aktualisieren. Dazu kann es den Variablen Replacer oder auch den Inhalt benachbarter Metadatenfelder verwenden, um Metadaten in logische Elemente auf allen hierarchischen Ebenen zu schreiben.
 
 ## Installation
 Um das Plugin nutzen zu können, müssen folgende Dateien installiert werden:

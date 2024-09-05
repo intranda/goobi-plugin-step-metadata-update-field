@@ -12,11 +12,11 @@ More information about the functionality of this plugin and the complete documen
 
 Detail                      | Description
 --------------------------- | ----------------------
-**Plugin identifier**       | -
+**Plugin identifier**       | intranda_step_metadata_update_field
 **Plugin type**             | step
 **Licence**                 | GPL 2.0 or newer
-**Documentation (German)**  | This plugin is not yet documented.
-**Documentation (English)** | This plugin is not yet documented.
+**Documentation (German)**  | https://docs.goobi.io/workflow-plugins/v/ger/step/goobi-plugin-step-metadata-update-field
+**Documentation (English)** | https://docs.goobi.io/workflow-plugins/v/eng/step/goobi-plugin-step-metadata-update-field
 
 ## Goobi details
 

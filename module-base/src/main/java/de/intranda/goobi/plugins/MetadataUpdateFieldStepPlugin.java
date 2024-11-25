@@ -71,6 +71,7 @@ import ugh.exceptions.WriteException;
 @Log4j2
 public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 
+    private static final long serialVersionUID = -1018540287633455977L;
     @Getter
     private String title = "intranda_step_metadata_update_field";
     @Getter
@@ -121,7 +122,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 
     @Override
     public HashMap<String, StepReturnValue> validate() {
-        return null;
+        return null; //NOSONAR
     }
 
     @Override
@@ -179,7 +180,9 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                                 // metadata from the same docstruct element
                                 MetadataType mdt = ughhelp.getMetadataType(prefs, pi.getValue());
                                 Metadata md = ughhelp.getMetadata(ds, mdt);
-                                pi.setValueToUse(md.getValue());
+                                if (md != null) {
+                                    pi.setValueToUse(md.getValue());
+                                }
                                 break;
 
                             case "counter":
@@ -236,7 +239,7 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     for (HierarchicalConfiguration hc : replacements) {
                         String searchvalue = hc.getString("@value").replace("\\u0020", " ");
                         String replacement = hc.getString("@replacement").replace("\\u0020", " ");
-                        value = value.replace(searchvalue, replacement);
+                        value = value.replaceAll(searchvalue, replacement);
                     }
 
                     // run through all metadata fields to find the correct element
@@ -263,7 +266,8 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         } catch (ReadException | PreferencesException | WriteException | IOException | SwapException | UghHelperException e) {
             log.error("Error while automatically updating the metadata", e);
             Helper.setFehlerMeldung("Error while automatically updating metadata.", e);
-            Helper.addMessageToProcessLog(step.getProzess().getId(), LogType.ERROR, "Error while automatically updating metadata: " + e.getMessage());
+            Helper.addMessageToProcessJournal(step.getProzess().getId(), LogType.ERROR,
+                    "Error while automatically updating metadata: " + e.getMessage());
             successfull = false;
         }
 
@@ -369,6 +373,6 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
         return sb.toString();
     }
     /*
-
+    
      */
 }

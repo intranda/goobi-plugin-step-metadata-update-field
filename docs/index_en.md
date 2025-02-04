@@ -48,3 +48,4 @@ Parameter               | Explanation
 `counter`      | Generates a sequential number that is automatically incremented. For example, using `%03d` will count as follows: `001`, `002`, `003`, etc. |
 `groupcounter` | A separate counter for each value of the `groupField` is used as the content.  |
 `<replace>`    | Allows text replacement, where specified texts are replaced with others. |
+`<condition>`  | If this field exists, the replacement is only executed if the metadata configured there exists and corresponds to the expression specified in `value`. |

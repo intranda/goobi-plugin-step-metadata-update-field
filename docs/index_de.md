@@ -47,3 +47,4 @@ Parameter               | Erläuterung
 `counter`      | Generiert eine fortlaufende Zahl, die automatisch erhöht wird. Beispielsweise wird mit `%03d` so gezählt: `001`, `002`, `003` etc. |
 `groupcounter` | Ein separater Zähler für jeden Wert des Feldes `groupField` wird als Inhalt verwendet. |
 `<replace>`    | Erlaubt die Ersetzung von Texten durch andere Texte. |
+`<condition>`  | Existiert dieses Feld, wird die Ersetzung nur ausgeführt, wenn das dort konfigurierte Metadatum vorhanden ist und dem in `value` angegebenem Ausdruck entspricht. |

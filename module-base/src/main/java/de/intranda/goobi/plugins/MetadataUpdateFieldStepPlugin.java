@@ -1,14 +1,3 @@
-package de.intranda.goobi.plugins;
-
-import java.io.IOException;
-import java.security.SecureRandom;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-
 /**
  * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
  *
@@ -28,6 +17,16 @@ import java.util.Arrays;
  *
  */
 
+package de.intranda.goobi.plugins;
+
+import java.io.IOException;
+import java.security.SecureRandom;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -157,6 +156,9 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
                     parameterList.add(p);
                 }
 
+                String conditionField = myconfig.getString("condition/@field", null);
+                String conditionValue = myconfig.getString("condition/@value", null);
+
                 // find the structure elements to be updated
                 DocStruct topstruct = fileformat.getDigitalDocument().getLogicalDocStruct();
                 List<DocStruct> docstructList = new ArrayList<>();
@@ -164,6 +166,24 @@ public class MetadataUpdateFieldStepPlugin implements IStepPluginVersion2 {
 
                 // now run through all matching docstructs to update their values
                 for (DocStruct ds : docstructList) {
+                    // check if a condition was configured
+                    if (StringUtils.isNotBlank(conditionField) && StringUtils.isNotBlank(conditionValue)) {
+
+                        boolean conditionMatched = false;
+                        if (ds.getAllMetadata() != null) {
+                            for (Metadata md : ds.getAllMetadata()) {
+                                // check if configured condition matches actual value
+                                if (md.getType().getName().equals(conditionField) && md.getValue().matches(conditionValue)) {
+                                    conditionMatched = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!conditionMatched) {
+                            // configured condition does not match, continue with next element
+                            continue;
+                        }
+                    }
 
                     // create metadata value
                     StringBuilder sb = new StringBuilder();

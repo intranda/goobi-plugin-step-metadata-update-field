@@ -3,6 +3,10 @@ title: Update Metadata Fields
 identifier: intranda_step_metadata_update_field
 description: Step Plugin for automatically updating values in METS files
 published: true
+keywords:
+    - Goobi workflow
+    - Plugin
+    - Step Plugin
 ---
 
 ## Introduction

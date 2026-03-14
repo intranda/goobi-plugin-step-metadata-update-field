@@ -10,7 +10,7 @@ keywords:
 ---
 
 ## Introduction
-This Step plugin for Goobi workflow allows to automatically create or update specific metadata fields inside of METS files. To do so it can use the Variable Replacer or neighbor metadata fields to write metadata to logical elements on all hiearchical levels.
+This Step plugin for Goobi workflow allows to automatically create or update specific metadata fields inside of METS files. To do so it can use the Variable Replacer or neighbor metadata fields to write metadata to logical elements on all hierarchical levels.
 
 ## Installation
 To be able to use the plugin, the following files must be installed:
